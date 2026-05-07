@@ -9,3 +9,8 @@ dist/
 build/
 *.egg-info/
 execution_logs.md
+frontend/node_modules/
+frontend/.next/
+frontend/.vercel/
+backend/*.db
+backend/.env

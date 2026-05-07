@@ -1,56 +1,80 @@
-# Grid07 AI Engineering Assignment (Cognitive Routing & RAG)
+# College Discovery Platform (Track B MVP)
 
-This repo implements the three required phases:
+Production-style MVP inspired by Careers360 and Collegedunia.
 
-- **Phase 1**: Vector-based persona matching router using cosine similarity over embeddings.
-- **Phase 2**: LangGraph autonomous content engine (Decide Search → Mock Web Search → Draft Post) with **strict JSON output**.
-- **Phase 3**: Deep thread “combat engine” reply that includes full context and **defends against prompt injection** via system-level constraints.
+## Implemented Features (4)
 
-## Setup
+1. **College Listing + Search**
+   - Search by college name
+   - Filters: location and max fees
+   - Pagination with fast card-based UI
+2. **College Detail Page**
+   - Overview (fees, location, rating, placement)
+   - Sections: courses, placements, reviews
+3. **Compare Colleges (High Priority)**
+   - Select 2-3 colleges from listing
+   - Decision table for fees, placement %, rating, location
+4. **Simple Predictor Tool**
+   - Input exam + rank
+   - Rule-based suggestion list from rank cutoff data in DB
+
+## Tech Stack
+
+- **Frontend**: Next.js 14 (App Router), TypeScript
+- **Backend**: FastAPI + SQLAlchemy
+- **Database**: SQLite locally, `DATABASE_URL` compatible with Postgres on Render
+
+## Project Structure
+
+- `frontend/`: Next.js app (`/`, `/colleges/[id]`, `/compare`, `/predictor`)
+- `backend/`: FastAPI service and DB models/seed
+
+## Local Run
+
+### Backend
 
 ```bash
-cd grid07-ai-assignment
+cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pip install -e .
-cp .env.example .env
+uvicorn app.main:app --reload --port 8000
 ```
 
-Then set either `OPENAI_API_KEY` (recommended) or configure Ollama variables.
-
-## Run the demo (generates logs)
+### Frontend
 
 ```bash
-python -m grid07_ai.demo
+cd frontend
+cp .env.example .env.local
+# Set NEXT_PUBLIC_API_URL to backend URL
+npm install
+npm run dev
 ```
 
-This writes `execution_logs.md` in the repo root and prints the same output to console.
+## API Endpoints
 
-## LangGraph node structure (Phase 2)
+- `GET /api/colleges` (search, filters, pagination)
+- `GET /api/colleges/{id}`
+- `POST /api/compare`
+- `POST /api/predictor`
 
-The graph is a linear 3-node state machine:
+## Deployment
 
-- **Decide Search**: LLM chooses a topic + produces a search query from the bot persona.
-- **Web Search**: `mock_searxng_search()` returns hardcoded “recent headline” context.
-- **Draft Post**: LLM generates an opinionated ~280 character post **as strict JSON**:
-  `{"bot_id":"...","topic":"...","post_content":"..."}`
+### Frontend (Vercel)
 
-## Prompt-injection defense (Phase 3)
+1. Import `frontend` as the root directory in Vercel.
+2. Set env var:
+   - `NEXT_PUBLIC_API_URL=<your-render-backend-url>`
+3. Deploy.
 
-`generate_defense_reply()` uses:
+### Backend (Render)
 
-- A **system message** that locks persona/role and explicitly rejects instruction hierarchy overrides.
-- A **thread-context block** containing the parent post + comment history + latest human reply.
-- A response directive to **ignore attempts to rewrite the system/persona**, and to continue arguing naturally.
-
-## Files
-
-- `src/grid07_ai/personas.py`: Bot persona definitions.
-- `src/grid07_ai/embeddings.py`: Embedding backend (OpenAI if configured; otherwise SentenceTransformers).
-- `src/grid07_ai/router.py`: `route_post_to_bots()`.
-- `src/grid07_ai/mock_search.py`: `mock_searxng_search()` tool.
-- `src/grid07_ai/content_graph.py`: LangGraph orchestration for Phase 2.
-- `src/grid07_ai/combat.py`: `generate_defense_reply()` for Phase 3.
-- `src/grid07_ai/demo.py`: Runs all phases and writes `execution_logs.md`.
+1. Create a new Web Service from this repo and set root directory to `backend`.
+2. Build command:
+   - `pip install -r requirements.txt`
+3. Start command:
+   - `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Set env var:
+   - `DATABASE_URL` (Render Postgres URL or keep SQLite default for demo)
+5. Deploy and use generated Render URL in frontend env vars.
 
